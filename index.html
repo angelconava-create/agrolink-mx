@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AgroLink MX — Prototipo</title>
+<style>
+  :root{--accent:#1e7a4c; --muted:#666; --card:#fff; --bg:#f4faf6; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+  body{margin:0;background:var(--bg);color:#123;padding:18px;}
+  header{display:flex;align-items:center;gap:12px;}
+  h1{margin:0;font-size:20px;}
+  .badge{background:var(--accent);color:white;padding:6px 10px;border-radius:8px;font-weight:600;}
+  .layout{display:grid;grid-template-columns:360px 1fr;gap:18px;margin-top:18px;}
+  .card{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(10,30,20,0.06);}
+  label{display:block;font-size:13px;margin-top:10px;color:var(--muted);}
+  input, select, textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #e2e8e4;margin-top:6px;font-size:14px;}
+  button{background:var(--accent);color:white;border:none;padding:10px 12px;border-radius:8px;font-weight:600;cursor:pointer;margin-top:10px;}
+  .listing{display:grid;gap:10px;margin-top:10px;}
+  .item{padding:10px;border-radius:8px;border:1px dashed #e4efe9;background:linear-gradient(180deg,rgba(255,255,255,0.8),rgba(245,255,250,0.8));}
+  .flex{display:flex;gap:8px;align-items:center;}
+  .muted{color:var(--muted);font-size:13px;}
+  .map{height:300px;border-radius:10px;background:linear-gradient(180deg,#e6f5ee,#dff0ee);display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:600;}
+  footer{margin-top:18px;color:var(--muted);font-size:13px;}
+  .row{display:flex;gap:8px;}
+  .pill{background:#eef7f0;padding:6px 8px;border-radius:999px;font-weight:600;color:var(--accent);font-size:13px;}
+  pre{background:#0f1720;color:#cfe9d9;padding:10px;border-radius:8px;overflow:auto;}
+  @media(max-width:900px){.layout{grid-template-columns:1fr;}.map{height:200px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="badge">Prototype</div>
+  <div>
+    <h1>AgroLink MX — Plataforma piloto</h1>
+    <div class="muted">Conecta productores y compradores. Vista prototipo interactivo.</div>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- Left column: Forms -->
+  <div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong>Registrar oferta (Productor)</strong>
+        <span class="pill">Mango</span>
+      </div>
+      <div class="muted">Sube la cosecha: descripción, cantidad y ubicación.</div>
+
+      <label>Nombre del productor</label>
+      <input id="producer_name" placeholder="Ej: Rancho Los Mangos" />
+
+      <label>Cantidad (kg)</label>
+      <input id="quantity" type="number" value="1000" />
+
+      <label>Calidad (1-5)</label>
+      <select id="quality">
+        <option value="5">5 — Excelente</option>
+        <option value="4">4 — Muy buena</option>
+        <option value="3">3 — Buena</option>
+        <option value="2">2 — Regular</option>
+        <option value="1">1 — Baja</option>
+      </select>
+
+      <label>Estado / Municipio</label>
+      <input id="location" placeholder="Ej: Michoacán, Municipio X" />
+
+      <label>Precio sugerido por kg (MXN) — opcional</label>
+      <input id="price" placeholder="Ej: 10" />
+
+      <button onclick="publishOffer()">Publicar oferta</button>
+
+      <hr />
+
+      <strong>Busqueda de comprador</strong>
+      <div class="muted">Simula un comprador buscando producto.</div>
+      <label>Buscar por producto</label>
+      <select id="search_product">
+        <option value="Mango">Mango</option>
+        <option value="Caña">Caña</option>
+        <option value="Aguacate">Aguacate</option>
+      </select>
+
+      <label>Destino (país)</label>
+      <input id="dest_country" placeholder="Ej: Estados Unidos" />
+
+      <button onclick="searchOffers()">Buscar ofertas</button>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <strong>Resumen rápido (IA simulada)</strong>
+      <div class="muted">La IA sugiere precio óptimo y ventana de venta usando datos históricos (simulado).</div>
+      <label>Selecciona oferta</label>
+      <select id="offer_selector" onchange="showSuggestion()">
+        <option value="">-- Ninguna --</option>
+      </select>
+
+      <div id="suggestion_box" style="margin-top:10px;"></div>
+
+      <button onclick="simulateExport()" style="background:#0b5f8a">Simular exportación</button>
+    </div>
+  </div>
+
+  <!-- Right column: Listings/map -->
+  <div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong>Ofertas disponibles</strong>
+        <div class="muted">En tiempo real (simulado)</div>
+      </div>
+      <div id="listings" class="listing" style="margin-top:10px;">
+        <!-- items injected here -->
+      </div>
+      <div style="margin-top:10px;">
+        <strong>Vista de mapa</strong>
+        <div class="map card" id="map">Mapa interactivo (placeholder)</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <strong>Flujo de negocio (MVP)</strong>
+      <ol class="muted" style="padding-left:16px">
+        <li>Productor publica oferta con fotos y especificaciones.</li>
+        <li>IA sugiere precio y ventana de venta.</li>
+        <li>Comprador hace oferta y reserva la carga.</li>
+        <li>Logística recibe la orden y coordina la recolección.</li>
+        <li>Pago y calificación completan la transacción.</li>
+      </ol>
+      <div style="margin-top:8px;">
+        <strong>Plantillas útiles:</strong>
+        <pre>API: /offers  POST/GET
+DB: offers(id,producer,qty,quality,location,price,date)
+IA: predict_price(quality,qty,season)</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div>Prototipo creado al vuelo — funcionalidades simuladas para mostrar el flujo.</div>
+  <div style="margin-top:6px;">Siguiente paso: integrar backend real, modelos de IA y pasarelas de pago.</div>
+</footer>
+
+<script>
+  // Data store (simulado)
+  let offers = [];
+
+  function renderListings() {
+    const el = document.getElementById('listings');
+    el.innerHTML = '';
+    if (offers.length === 0) {
+      el.innerHTML = '<div class="muted">No hay ofertas publicadas aún.</div>';
+      return;
+    }
+    offers.forEach((o, idx) => {
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <strong>${o.producer}</strong> <span class="muted">• ${o.location}</span><br/>
+            <span class="muted">${o.qty} kg • Calidad ${o.quality}</span>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:700;font-size:18px">${o.price ? o.price+' MXN/kg' : 'Precio: —'}</div>
+            <div class="muted">Publicado: ${new Date(o.date).toLocaleString()}</div>
+          </div>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;">
+          <button onclick="selectOffer(${idx})" style="background:#2a6b3a">Seleccionar</button>
+          <button onclick="contact(${idx})" style="background:#6b8a0b">Contactar</button>
+        </div>
+      `;
+      el.appendChild(div);
+    });
+  }
+
+  function publishOffer() {
+    const producer = document.getElementById('producer_name').value || 'Productor Anónimo';
+    const qty = Number(document.getElementById('quantity').value) || 0;
+    const quality = Number(document.getElementById('quality').value) || 3;
+    const location = document.getElementById('location').value || 'Desconocido';
+    const price = document.getElementById('price').value || '';
+    const o = {producer, qty, quality, location, price, date: Date.now()};
+    offers.unshift(o);
+    updateSelector();
+    renderListings();
+    alert('Oferta publicada ✅');
+  }
+
+  function updateSelector() {
+    const sel = document.getElementById('offer_selector');
+    sel.innerHTML = '<option value="">-- Ninguna --</option>';
+    offers.forEach((o, idx) => {
+      const txt = `${o.producer} — ${o.qty}kg — ${o.location}`;
+      const opt = document.createElement('option');
+      opt.value = idx;
+      opt.text = txt;
+      sel.appendChild(opt);
+    });
+  }
+
+  function selectOffer(idx) {
+    document.getElementById('offer_selector').value = idx;
+    showSuggestion();
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  function contact(idx) {
+    const o = offers[idx];
+    const msg = `Contacto generado:\nProductor: ${o.producer}\nProducto: Mango\nCantidad: ${o.qty} kg\nUbicación: ${o.location}\nPrecio: ${o.price || '—'}`;
+    alert(msg + '\n\n(En un producto real, aquí se abriría un chat / email / enlace de pago.)');
+  }
+
+  function showSuggestion() {
+    const v = document.getElementById('offer_selector').value;
+    const box = document.getElementById('suggestion_box');
+    if (v === '') {
+      box.innerHTML = '<div class="muted">Selecciona una oferta para ver la sugerencia IA.</div>';
+      return;
+    }
+    const o = offers[Number(v)];
+    // Simulated IA suggestion:
+    const base = 8.0; // base price MXN/kg (simulado)
+    const qualityFactor = 1 + (o.quality - 3) * 0.12; // each quality step adjusts price 12%
+    const qtyFactor = o.qty > 2000 ? 0.92 : (o.qty < 200 ? 1.08 : 1.0);
+    const seasonalFactor = (new Date().getMonth() >= 4 && new Date().getMonth() <= 9) ? 1.15 : 0.95; // mango season example
+    const suggested = (base * qualityFactor * qtyFactor * seasonalFactor).toFixed(2);
+    box.innerHTML = `
+      <div style="padding:10px;border-radius:8px;background:#fbfff9">
+        <div><strong>Precio sugerido:</strong> ${suggested} MXN/kg</div>
+        <div class="muted" style="margin-top:6px;">Ventana recomendada de venta: Próximas 2-3 semanas.</div>
+        <div class="muted" style="margin-top:6px;">Riesgos: subida de transporte, variación en demanda internacional.</div>
+      </div>
+    `;
+  }
+
+  function searchOffers() {
+    const prod = document.getElementById('search_product').value;
+    const dest = document.getElementById('dest_country').value || 'MX';
+    // Simple simulated matching: show all offers and highlight approximate exported ones
+    renderListings();
+    alert('Resultados mostrados. (Simulación)\nDestino buscado: ' + dest);
+  }
+
+  function simulateExport() {
+    const v = document.getElementById('offer_selector').value;
+    if (v === '') { alert('Selecciona una oferta primero.'); return; }
+    const o = offers[Number(v)];
+    const estCostPerKg = (o.qty > 1000) ? 2.4 : 3.2; // simulated logistic cost
+    const totalCost = (estCostPerKg * o.qty).toFixed(2);
+    alert(`Simulación de exportación:\nProductor: ${o.producer}\nCantidad: ${o.qty} kg\nCosto logístico estimado: ${estCostPerKg} MXN/kg\nCosto total estimado: ${totalCost} MXN\n(Esto es una simulación; integrar proveedores logísticos reales en producción.)`);
+  }
+
+  // Seed with example offers
+  offers = [
+    {producer:'Rancho El Palmar', qty:1500, quality:5, location:'Michoacán, Lázaro Cárdenas', price:12.5, date: Date.now() - 1000*60*60*24},
+    {producer:'Finca San José', qty:800, quality:4, location:'Colima, Manzanillo', price:11.0, date: Date.now() - 1000*60*60*24*2},
+    {producer:'Cooperativa La Caña', qty:5000, quality:3, location:'Veracruz, X', price:9.0, date: Date.now() - 1000*60*60*24*3}
+  ];
+  updateSelector();
+  renderListings();
+  showSuggestion();
+</script>
+</body>
+</html>
